@@ -1,0 +1,2560 @@
+{
+  "name": "Proyecto Final - Asistente de Cartas Ofertas",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 5,
+              "unit": "minutes"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "q": "Solicitud de datos carta oferta"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -2832,
+        0
+      ],
+      "id": "da3c8af7-7e67-476e-bd34-a5d4319e43c4",
+      "name": "Email solicitud CO",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IBJ6PXdBzhBIUVIx",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "ROL\nEres un asistente especializado en gestión de Cartas Oferta para el\nárea de Compras de Saint-Gobain Argentina. Tu única tarea es leer el\nemail de un proveedor y extraer 4 datos específicos — no generas\nningún documento, eso lo hace otro paso del sistema.\n\nOBJETIVO\nDel email que te va a llegar, extrae exactamente estos 4 datos:\n- Nombre y Apellido (de la persona que va a firmar)\n- Cargo (que ocupa en la empresa)\n- Dirección fiscal (de la empresa proveedora)\n- Email de contacto (del firmante)\n\nREGLAS\n- Nunca inventes ni completes con datos supuestos un campo que no\n  esté explícito en el email. Si falta alguno, déjalo como null.\n- Piensa paso a paso antes de responder: primero identifica cada dato\n  mencionado en el texto, después revisa si hay algo inconsistente o\n  con terminología incorrecta, y recién ahí arma la respuesta final.\n- Si detectas algo raro, anótalo en \"observaciones\", pero completa\n  igual lo que sí quede claro.\n\nFORMATO DE SALIDA (JSON estricto, sin texto adicional)\n{\n  \"nombre_apellido\": \"...\" o null,\n  \"cargo\": \"...\" o null,\n  \"direccion_fiscal\": \"...\" o null,\n  \"email_contacto\": \"...\" o null,\n  \"datos_completos\": true o false,\n  \"observaciones\": \"...\"\n}"
+            },
+            {
+              "content": "=EMAIL A ANALIZAR:\n\n<email>\n{{ $('Email solicitud CO').item.json.text }}\n</email>"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        -2304,
+        0
+      ],
+      "id": "31134b95-058e-4523-a669-d549c11c1f66",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "DGnl4ZQRqkw5WsX5",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "655958ba-a0e9-499c-bef6-aef9a60f27fa",
+              "name": "proveedor_extraido",
+              "value": "={{ $json.subject.split(' - ')[1] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -2656,
+        0
+      ],
+      "id": "fe536852-9452-40e0-817a-354c71659420",
+      "name": "Extraer nombre del proveedor"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appQKXHbC0i811eJV",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbleNfr5aUJmbSbEp",
+          "mode": "id"
+        },
+        "filterByFormula": "={{ 'FIND(LOWER(\"' + $json.proveedor_extraido + '\"), LOWER({Nombre de la Carta}))' }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        -2480,
+        0
+      ],
+      "id": "3a7b8c9a-bf09-4dea-adbd-6702457bd081",
+      "name": "Buscar fila del proveedor",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "Yo4cMiT6h0Xzus0c",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appQKXHbC0i811eJV",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbleNfr5aUJmbSbEp",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Buscar fila del proveedor').item.json.id }}",
+            "Estado": "Datos incompletos",
+            "Comentarios": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text).observaciones }}",
+            "Email original recibido": "={{ $('Email solicitud CO').item.json.text }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Nombre de la carta",
+              "displayName": "Nombre de la carta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Comentarios",
+              "displayName": "Comentarios",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente de datos",
+                  "value": "Pendiente de datos"
+                },
+                {
+                  "name": "Datos incompletos",
+                  "value": "Datos incompletos"
+                },
+                {
+                  "name": "En validación",
+                  "value": "En validación"
+                },
+                {
+                  "name": "Aprobada",
+                  "value": "Aprobada"
+                },
+                {
+                  "name": "Rechazada",
+                  "value": "Rechazada"
+                },
+                {
+                  "name": "Enviada al pasante",
+                  "value": "Enviada al pasante"
+                },
+                {
+                  "name": "Vigente",
+                  "value": "Vigente"
+                },
+                {
+                  "name": "Falta firma",
+                  "value": "Falta firma"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Licitación vinculada",
+              "displayName": "Licitación vinculada",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Servicio (from Licitación vinculada)",
+              "displayName": "Servicio (from Licitación vinculada)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Nombre y Apellido Prov",
+              "displayName": "Nombre y Apellido Prov",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Dirección fiscal Prov.",
+              "displayName": "Dirección fiscal Prov.",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Cargo",
+              "displayName": "Cargo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email contacto Prov",
+              "displayName": "Email contacto Prov",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email original recibido",
+              "displayName": "Email original recibido",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Aprobado",
+              "displayName": "Aprobado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Link al Word",
+              "displayName": "Link al Word",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Link al PDF",
+              "displayName": "Link al PDF",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "N° Carta Oferta",
+              "displayName": "N° Carta Oferta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Vencimiento CO",
+              "displayName": "Vencimiento CO",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        -2000,
+        240
+      ],
+      "id": "ef1e4c66-3035-4d22-bbec-b54fd588f533",
+      "name": "Datos incompletos",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "Yo4cMiT6h0Xzus0c",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appQKXHbC0i811eJV",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbleNfr5aUJmbSbEp",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Buscar fila del proveedor').item.json.id }}",
+            "Nombre y Apellido Prov": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text).nombre_apellido }}",
+            "Cargo": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text).cargo }}",
+            "Dirección fiscal Prov.": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text).direccion_fiscal }}",
+            "Email contacto Prov": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text).email_contacto }}",
+            "Estado": "En validación",
+            "Email original recibido": "={{ $('Email solicitud CO').item.json.text }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Nombre de la carta",
+              "displayName": "Nombre de la carta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Comentarios",
+              "displayName": "Comentarios",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente de datos",
+                  "value": "Pendiente de datos"
+                },
+                {
+                  "name": "Datos incompletos",
+                  "value": "Datos incompletos"
+                },
+                {
+                  "name": "En validación",
+                  "value": "En validación"
+                },
+                {
+                  "name": "Aprobada",
+                  "value": "Aprobada"
+                },
+                {
+                  "name": "Rechazada",
+                  "value": "Rechazada"
+                },
+                {
+                  "name": "Enviada al pasante",
+                  "value": "Enviada al pasante"
+                },
+                {
+                  "name": "Vigente",
+                  "value": "Vigente"
+                },
+                {
+                  "name": "Falta firma",
+                  "value": "Falta firma"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Licitación vinculada",
+              "displayName": "Licitación vinculada",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Servicio (from Licitación vinculada)",
+              "displayName": "Servicio (from Licitación vinculada)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Nombre y Apellido Prov",
+              "displayName": "Nombre y Apellido Prov",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Dirección fiscal Prov.",
+              "displayName": "Dirección fiscal Prov.",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Cargo",
+              "displayName": "Cargo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email contacto Prov",
+              "displayName": "Email contacto Prov",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email original recibido",
+              "displayName": "Email original recibido",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Aprobado",
+              "displayName": "Aprobado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Link al Word",
+              "displayName": "Link al Word",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Link al PDF",
+              "displayName": "Link al PDF",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "N° Carta Oferta",
+              "displayName": "N° Carta Oferta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Vencimiento CO",
+              "displayName": "Vencimiento CO",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        -1984,
+        -192
+      ],
+      "id": "65509bab-ffa3-45c3-95d9-0a4751b96096",
+      "name": "Datos completos",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "Yo4cMiT6h0Xzus0c",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "sendAndWait",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0C228VASNS",
+          "mode": "list",
+          "cachedResultName": "proyecto-final-asistente-carta-oferta"
+        },
+        "message": "=Nombre y Apellido: {{ JSON.parse($('Message a model').item.json.output[0].content[0].text).nombre_apellido }}\n\nCargo:  {{ JSON.parse($('Message a model').item.json.output[0].content[0].text).cargo }}\n\nDirección fiscal:  {{ JSON.parse($('Message a model').item.json.output[0].content[0].text).direccion_fiscal }}\n\nEmail:  {{ JSON.parse($('Message a model').item.json.output[0].content[0].text).email_contacto }}",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        -1808,
+        -192
+      ],
+      "id": "f525a1fe-bbdd-4c91-8a9c-14df4fefdf9c",
+      "name": "HITL-Validación datos extraidos",
+      "webhookId": "983b7596-28ed-4d46-898b-17a00d167b22",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "jTbifjBNppxbZZni",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3cad3d29-d863-4f03-a899-860fb3942dab",
+              "leftValue": "={{ $('HITL-Validación datos extraidos').item.json.data.approved }}",
+              "rightValue": "={{ true }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1664,
+        -192
+      ],
+      "id": "6dae7da6-3210-4b7c-beeb-e87817398171",
+      "name": "Aprobado por comprador"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appQKXHbC0i811eJV",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbleNfr5aUJmbSbEp",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Estado": "Aprobada",
+            "id": "={{ $('Buscar fila del proveedor').item.json.id }}",
+            "Aprobado": true
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Nombre de la carta",
+              "displayName": "Nombre de la carta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Comentarios",
+              "displayName": "Comentarios",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente de datos",
+                  "value": "Pendiente de datos"
+                },
+                {
+                  "name": "Datos incompletos",
+                  "value": "Datos incompletos"
+                },
+                {
+                  "name": "En validación",
+                  "value": "En validación"
+                },
+                {
+                  "name": "Aprobada",
+                  "value": "Aprobada"
+                },
+                {
+                  "name": "Rechazada",
+                  "value": "Rechazada"
+                },
+                {
+                  "name": "Enviada al pasante",
+                  "value": "Enviada al pasante"
+                },
+                {
+                  "name": "Vigente",
+                  "value": "Vigente"
+                },
+                {
+                  "name": "Falta firma",
+                  "value": "Falta firma"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Licitación vinculada",
+              "displayName": "Licitación vinculada",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Servicio (from Licitación vinculada)",
+              "displayName": "Servicio (from Licitación vinculada)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Nombre y Apellido Prov",
+              "displayName": "Nombre y Apellido Prov",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Dirección fiscal Prov.",
+              "displayName": "Dirección fiscal Prov.",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Cargo",
+              "displayName": "Cargo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email contacto Prov",
+              "displayName": "Email contacto Prov",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email original recibido",
+              "displayName": "Email original recibido",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Aprobado",
+              "displayName": "Aprobado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Link al Word",
+              "displayName": "Link al Word",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Link al PDF",
+              "displayName": "Link al PDF",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "N° Carta Oferta",
+              "displayName": "N° Carta Oferta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Vencimiento CO",
+              "displayName": "Vencimiento CO",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        -1632,
+        -384
+      ],
+      "id": "6099a71f-7f01-4627-8fc3-58bb5466d6a0",
+      "name": "Marcar Aprobada",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "Yo4cMiT6h0Xzus0c",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appQKXHbC0i811eJV",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbleNfr5aUJmbSbEp",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Buscar fila del proveedor').item.json.id }}",
+            "Estado": "Rechazada"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Nombre de la carta",
+              "displayName": "Nombre de la carta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Comentarios",
+              "displayName": "Comentarios",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente de datos",
+                  "value": "Pendiente de datos"
+                },
+                {
+                  "name": "Datos incompletos",
+                  "value": "Datos incompletos"
+                },
+                {
+                  "name": "En validación",
+                  "value": "En validación"
+                },
+                {
+                  "name": "Aprobada",
+                  "value": "Aprobada"
+                },
+                {
+                  "name": "Rechazada",
+                  "value": "Rechazada"
+                },
+                {
+                  "name": "Enviada al pasante",
+                  "value": "Enviada al pasante"
+                },
+                {
+                  "name": "Vigente",
+                  "value": "Vigente"
+                },
+                {
+                  "name": "Falta firma",
+                  "value": "Falta firma"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Licitación vinculada",
+              "displayName": "Licitación vinculada",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Servicio (from Licitación vinculada)",
+              "displayName": "Servicio (from Licitación vinculada)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Nombre y Apellido Prov",
+              "displayName": "Nombre y Apellido Prov",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Dirección fiscal Prov.",
+              "displayName": "Dirección fiscal Prov.",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Cargo",
+              "displayName": "Cargo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email contacto Prov",
+              "displayName": "Email contacto Prov",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email original recibido",
+              "displayName": "Email original recibido",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Aprobado",
+              "displayName": "Aprobado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Link al Word",
+              "displayName": "Link al Word",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Link al PDF",
+              "displayName": "Link al PDF",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "N° Carta Oferta",
+              "displayName": "N° Carta Oferta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Vencimiento CO",
+              "displayName": "Vencimiento CO",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        -1664,
+        16
+      ],
+      "id": "08cb0fe6-a977-40b0-8a91-665fbd837fd8",
+      "name": "Marcar Rechazado",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "Yo4cMiT6h0Xzus0c",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a805d481-b5bb-4c31-a833-b0f4ef3d1a21",
+              "leftValue": "={{ JSON.parse($json.output[0].content[0].text).datos_completos }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2000,
+        0
+      ],
+      "id": "f15a0e5b-6ffb-4234-94dc-00a28ba63c29",
+      "name": "Datos completos?"
+    },
+    {
+      "parameters": {
+        "operation": "copy",
+        "fileId": {
+          "__rl": true,
+          "value": "19OqzeYqaqCINHOLxB-XrqJ4cDpY3H8Po5V7NIJzGgKI",
+          "mode": "list",
+          "cachedResultName": "PLANTILLA MAESTRA - Carta Oferta",
+          "cachedResultUrl": "https://docs.google.com/document/d/19OqzeYqaqCINHOLxB-XrqJ4cDpY3H8Po5V7NIJzGgKI/edit?usp=drivesdk"
+        },
+        "name": "={{ 'Carta Oferta - ' + $('Buscar fila del proveedor').item.json.fields['Nombre de la carta'] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1504,
+        -384
+      ],
+      "id": "525948d3-6a3a-4099-b192-8ee6010c3d19",
+      "name": "Copiar CO",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "OkuyKDABsWQiNEzE",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function numeroALetras(num) { const unidades = ['', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve']; const especiales = ['diez','once','doce','trece','catorce','quince','dieciseis','diecisiete','dieciocho','diecinueve']; const decenas = ['', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa']; const centenas = ['', 'cien', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos']; function convertirGrupo(n) { if (n === 0) return ''; if (n < 10) return unidades[n]; if (n < 20) return especiales[n - 10]; if (n < 100) return decenas[Math.floor(n/10)] + (n%10 ? ' y ' + unidades[n%10] : ''); if (n < 1000) return centenas[Math.floor(n/100)] + (n%100 ? ' ' + convertirGrupo(n%100) : ''); return ''; } if (num === 0) return 'cero'; let millones = Math.floor(num / 1000000); let restoMillones = num % 1000000; let miles = Math.floor(restoMillones / 1000); let resto = restoMillones % 1000; let resultado = ''; if (millones > 0) { resultado += (millones === 1 ? 'un millon' : convertirGrupo(millones) + ' millones'); } if (miles > 0) { resultado += (resultado ? ' ' : '') + (miles === 1 ? 'mil' : convertirGrupo(miles) + ' mil'); } if (resto > 0) { resultado += (resultado ? ' ' : '') + convertirGrupo(resto); } return resultado; } const monto = $input.item.json.fields['Valor mensual estimado']; const moneda = $input.item.json.fields['Moneda']; const monedaTexto = moneda === 'USD' ? 'dolares estadounidenses' : 'pesos argentinos'; const montoEnLetras = numeroALetras(Math.round(monto)) + ' ' + monedaTexto; return { json: { ...$input.item.json, montoEnLetras: montoEnLetras } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1168,
+        -384
+      ],
+      "id": "cdae5673-92c7-4f8b-b138-590e88e85b5c",
+      "name": "Transformar monto en letra"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "base": {
+          "__rl": true,
+          "value": "appQKXHbC0i811eJV",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblZSn7Tmk0ejyGvR",
+          "mode": "id"
+        },
+        "id": "={{ $('Buscar fila del proveedor').item.json.fields['Licitación vinculada'][0] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        -1360,
+        -384
+      ],
+      "id": "60dc7f92-9f77-4f0f-afbc-a638c407998c",
+      "name": "Buscar fila de licitación",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "Yo4cMiT6h0Xzus0c",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const numero = String($input.item.json.fields['N° OC/CM'] || '');\nlet etiqueta = 'CM/OC';\nif (numero.startsWith('46')) {\n  etiqueta = 'CM';\n} else if (numero.startsWith('45')) {\n  etiqueta = 'OC';\n}\nconst perfiles = $input.item.json.fields['Perfiles'] || $input.item.json.fields['Personal inicial asignado'] || 'sin especificar';\nconst jornada = $input.item.json.fields['Jornada de trabajo'] || 'sin especificar';\nconst notaCombinada = 'N° ' + etiqueta + ': ' + (numero || 'sin numero asignado') + '. Perfiles: ' + perfiles + '. Jornada de trabajo: ' + jornada + '.';\n\nconst hayPersonal = $input.item.json.fields['Hay personal inicial asignado?'];\nconst opcionSI = hayPersonal === 'Si' ? '● SI' : 'o SI';\nconst opcionNO = hayPersonal === 'Si' ? 'o NO' : '● NO';\n\nconst modalidadSeleccionada = $input.item.json.fields['Modalidad del servicio'];\nconst opcionPorDia = modalidadSeleccionada === 'Por día' ? '● Por día' : 'o Por día';\nconst opcionPorHora = modalidadSeleccionada === 'Por hora' ? '● Por hora' : 'o Por hora';\nconst opcionPorMes = modalidadSeleccionada === 'Por mes' ? '● Por mes' : 'o Por mes';\nconst opcionPorServicio = modalidadSeleccionada === 'Por servicio' ? '● Por servicio' : 'o Por servicio';\n\nconst condicionSeleccionada = $input.item.json.fields['Condición de pago'];\nconst opcionInmediata = condicionSeleccionada === 'Inmediata' ? '● Inmediata' : 'o Inmediata';\nconst opcion15 = condicionSeleccionada === '15 días F/F' ? '● 15 días F/F' : 'o 15 días F/F';\nconst opcion30 = condicionSeleccionada === '30 días F/F' ? '● 30 días F/F' : 'o 30 días F/F';\nconst opcion45 = condicionSeleccionada === '45 días F/F' ? '● 45 días F/F' : 'o 45 días F/F';\nconst opcion60 = condicionSeleccionada === '60 días F/F' ? '● 60 días F/F' : 'o 60 días F/F';\nconst opcion75 = condicionSeleccionada === '75 días F/F' ? '● 75 días F/F' : 'o 75 días F/F';\n\nreturn { json: { ...$input.item.json, notaCombinada: notaCombinada, opcionSI: opcionSI, opcionNO: opcionNO, opcionPorDia: opcionPorDia, opcionPorHora: opcionPorHora, opcionPorMes: opcionPorMes, opcionPorServicio: opcionPorServicio, opcionInmediata: opcionInmediata, opcion15: opcion15, opcion30: opcion30, opcion45: opcion45, opcion60: opcion60, opcion75: opcion75 } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -976,
+        -384
+      ],
+      "id": "2eceef03-a784-4f4e-898d-febfa3080eb1",
+      "name": "Calcula nota combinada"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "={{ $('Copiar CO').item.json.id }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "replaceAll",
+              "text": "[RAZON SOCIAL SG 1]",
+              "replaceText": "={{ $('Buscar fila de licitación').item.json.fields['Razon Social SG'].join(' y ') }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[RAZON SOCIAL DEL PROVEEDOR]",
+              "replaceText": "= {{ $('Buscar fila de licitación').item.json.fields['Proveedor'] }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[DOMICILIO SG]",
+              "replaceText": "= {{ $('Buscar fila de licitación').item.json.fields['Domicilio SG'].join(' y ') }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[DOMICILIO DEL CLIENTE]",
+              "replaceText": "= {{ $('Buscar fila de licitación').item.json.fields['Domicilio SG'].join(' y ') }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": " [OFERTA DE SERVICIO]",
+              "replaceText": "= {{ $('Buscar fila de licitación').item.json.fields['Servicio'] }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[Oferta de Servicio]",
+              "replaceText": "= {{ $('Buscar fila de licitación').item.json.fields['Servicio'] }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[ROL]",
+              "replaceText": "={{ $('Buscar fila del proveedor').item.json.fields['Cargo'] }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": " [RAZON SOCIAL SG 2]",
+              "replaceText": "= {{ $('Buscar fila de licitación').item.json.fields['Razon Social SG'].join(' y ') }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[PROVEEDOR]",
+              "replaceText": "= {{ $('Buscar fila de licitación').item.json.fields['Proveedor'] }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[CORREO ELECTRONICO (DPTO LEGALES)]",
+              "replaceText": "Alejandra.sastre@saint-gobain.com"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[CORREO ELECTRONICO 1 (DPTO DE COMPRAS)]",
+              "replaceText": "virginia.rangel@saint-gobain.com"
+            },
+            {
+              "action": "replaceAll",
+              "text": " [CORREO ELÉCTRONICO 2 (DPTO DE COMPRAS)]",
+              "replaceText": " tomas.porco@saint-gobain.com"
+            },
+            {
+              "action": "replaceAll",
+              "text": " [PROVEEDOR]",
+              "replaceText": "= {{ $('Buscar fila de licitación').item.json.fields['Proveedor'] }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[CARGO FIRMANTE]",
+              "replaceText": "={{ $('Buscar fila del proveedor').item.json.fields['Cargo'] }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[NOMBRE FIRMANTE]",
+              "replaceText": "={{ $('Buscar fila del proveedor').item.json.fields['Nombre y Apellido Prov'] }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[DIRECCION CORREO ELECTRONICO DEL PROVEEDOR]",
+              "replaceText": "={{ $('Buscar fila del proveedor').item.json.fields['Email contacto Prov'] }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": " [DOMICILIO DEL PROVEEDOR]",
+              "replaceText": "= {{ $('Buscar fila del proveedor').item.json.fields['Dirección fiscal Prov.'] }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "PRECIO EN PESOS O DOLARES",
+              "replaceText": "={{ $('Buscar fila de licitación').item.json.fields['Valor mensual estimado'] }} {{ $('Buscar fila de licitación').item.json.fields['Moneda'] }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "PESOS ARGENTINOS O DOLARES EN LETRA",
+              "replaceText": "={{ $('Transformar monto en letra').item.json.montoEnLetras }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[Cantidad en número]",
+              "replaceText": "= {{ $('Buscar fila de licitación').item.json.fields['Cantidad personal asignado'] }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": " [Direccion de la o las unidades de negocio]",
+              "replaceText": "={{ $('Buscar fila de licitación').item.json.fields['Sita en'].join(' y ') }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[Nota de servicio]",
+              "replaceText": "={{ $('Buscar fila de licitación').item.json.fields['Nota de servicio'] }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "[Nombre de la o las unidades de negocio]",
+              "replaceText": "={{ $('Buscar fila de licitación').item.json.fields['Unidad de negocios'].join(' y ') }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[dia inicio]",
+              "replaceText": "={{ $('Separa fechas').item.json.diaInicio }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[mes inicio]",
+              "replaceText": "={{ $('Separa fechas').item.json.mesInicio }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[año inicio]",
+              "replaceText": "={{ $('Separa fechas').item.json.anoInicio }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[dia fin]",
+              "replaceText": "={{ $('Separa fechas').item.json.diaFin }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[mes fin]",
+              "replaceText": "={{ $('Separa fechas').item.json.mesFin }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[año fin]",
+              "replaceText": "= {{ $('Separa fechas').item.json.anoFin }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "o SI",
+              "replaceText": "={{ $('Calcula nota combinada').item.json.opcionSI }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "o NO",
+              "replaceText": "={{ $('Calcula nota combinada').item.json.opcionNO }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "o Por dia",
+              "replaceText": "={{ $('Calcula nota combinada').item.json.opcionPorDia }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "o Por Hora",
+              "replaceText": "={{ $('Calcula nota combinada').item.json.opcionPorHora }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "o Por Servicio",
+              "replaceText": "= {{ $('Calcula nota combinada').item.json.opcionPorServicio }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "o inmediata",
+              "replaceText": "={{ $('Calcula nota combinada').item.json.opcionInmediata }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "o 15 dias F/F",
+              "replaceText": "={{ $('Calcula nota combinada').item.json.opcion15 }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "o 30 dias F/F",
+              "replaceText": "={{ $('Calcula nota combinada').item.json.opcion30 }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "o 45 dias F/F",
+              "replaceText": "={{ $('Calcula nota combinada').item.json.opcion45 }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "o 60 dias F/F",
+              "replaceText": "={{ $('Calcula nota combinada').item.json.opcion60 }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "o 75 dias F/F",
+              "replaceText": "={{ $('Calcula nota combinada').item.json.opcion75 }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "=[Fecha]",
+              "replaceText": "= {{ $('Separa fechas').item.json.fechaEmisionTexto }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "[Descripción del servicio]",
+              "replaceText": "={{ $('Buscar fila de licitación').item.json.fields['Descripción del servicio'] }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": " [Nota de precio] ",
+              "replaceText": "={{ $('Calcula nota combinada').item.json.notaCombinada }}",
+              "matchCase": true
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        -384
+      ],
+      "id": "0b09ee0a-7e0c-4be0-9959-84106ab7ef61",
+      "name": "Update a document",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "XrCfczAkkmHT5ycK",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const plazoInicio = $input.item.json.fields['Plazo inicio'];\nconst plazoFin = $input.item.json.fields['Plazo fin'];\n\nconst [anoInicio, mesInicio, diaInicio] = plazoInicio.split('-');\nconst [anoFin, mesFin, diaFin] = plazoFin.split('-');\n\nconst meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];\nconst fechaEmisionRaw = $('Buscar fila del proveedor').item.json.fields['Fecha de emision'];\nconst [anioEm, mesEm, diaEm] = fechaEmisionRaw.split('-');\nconst fechaEmisionTexto = parseInt(diaEm) + ' de ' + meses[parseInt(mesEm)-1] + ' de ' + anioEm;\n\nconst inicioDate = new Date(plazoInicio);\nconst finDate = new Date(plazoFin);\nconst mesesContrato = Math.round((finDate - inicioDate) / (1000*60*60*24*30.44));\nconst valorMensual = $('Buscar fila de licitación').item.json.fields['Valor mensual estimado'];\nconst valorTotalContrato = Math.round(valorMensual * mesesContrato * 1.20);\n\nconst monedaContrato = $('Buscar fila de licitación').item.json.fields['Moneda'];\nconst valorTotalContratoTexto = valorTotalContrato.toLocaleString('es-AR') + ' ' + monedaContrato;\n\nreturn { json: { ...$input.item.json, diaInicio: diaInicio, mesInicio: mesInicio, anoInicio: anoInicio, diaFin: diaFin, mesFin: mesFin, anoFin: anoFin, fechaEmisionTexto: fechaEmisionTexto, valorTotalContrato: valorTotalContrato, valorTotalContratoTexto: valorTotalContratoTexto } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        -384
+      ],
+      "id": "7e4a0cd6-8b7e-4b94-88ec-2ca571c2187c",
+      "name": "Separa fechas"
+    },
+    {
+      "parameters": {
+        "name": "={{ 'Carta Oferta - ' + $('Buscar fila de licitación').item.json.fields['Proveedor'] + '.docx' }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1RGhK7_Y-rfjNF5iigP8cp2hygZPO-B9v",
+          "mode": "list",
+          "cachedResultName": "Cartas Generadas",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1RGhK7_Y-rfjNF5iigP8cp2hygZPO-B9v"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -304,
+        -384
+      ],
+      "id": "38b62747-1a29-4b2c-bde4-a984da7c1009",
+      "name": "Subir Word a Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "OkuyKDABsWQiNEzE",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Copiar CO').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "application/pdf"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -128,
+        -384
+      ],
+      "id": "0fb38115-2a7f-491d-a831-f9ad246d4842",
+      "name": "Exportar PDF",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "OkuyKDABsWQiNEzE",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Copiar CO').item.json.id }}"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -464,
+        -384
+      ],
+      "id": "e17b98e7-e362-4882-8c25-1a990fd6d18a",
+      "name": "Exportación a Word",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "OkuyKDABsWQiNEzE",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "= {{ 'Carta Oferta - ' + $('Buscar fila de licitación').item.json.fields['Proveedor'] + '.pdf' }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1RGhK7_Y-rfjNF5iigP8cp2hygZPO-B9v",
+          "mode": "list",
+          "cachedResultName": "Cartas Generadas",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1RGhK7_Y-rfjNF5iigP8cp2hygZPO-B9v"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        48,
+        -384
+      ],
+      "id": "d22f6c3d-865e-4706-b72e-8e6261259df6",
+      "name": "Subir PDF a Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "OkuyKDABsWQiNEzE",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appQKXHbC0i811eJV",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbleNfr5aUJmbSbEp",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Buscar fila del proveedor').item.json.id }}",
+            "Link al Word": "={{ $('Subir Word a Drive').item.json.webViewLink }}",
+            "Link al PDF": "={{ $('Subir PDF a Drive').item.json.webViewLink }}",
+            "Vencimiento CO": "={{ $('Buscar fila de licitación').item.json.fields['Plazo fin'] }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Nombre de la carta",
+              "displayName": "Nombre de la carta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Comentarios",
+              "displayName": "Comentarios",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Fecha de emision",
+              "displayName": "Fecha de emision",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente de datos",
+                  "value": "Pendiente de datos"
+                },
+                {
+                  "name": "Datos incompletos",
+                  "value": "Datos incompletos"
+                },
+                {
+                  "name": "En validación",
+                  "value": "En validación"
+                },
+                {
+                  "name": "Aprobada",
+                  "value": "Aprobada"
+                },
+                {
+                  "name": "Rechazada",
+                  "value": "Rechazada"
+                },
+                {
+                  "name": "Enviada al pasante",
+                  "value": "Enviada al pasante"
+                },
+                {
+                  "name": "Vigente",
+                  "value": "Vigente"
+                },
+                {
+                  "name": "Falta firma",
+                  "value": "Falta firma"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Licitación vinculada",
+              "displayName": "Licitación vinculada",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Servicio (from Licitación vinculada)",
+              "displayName": "Servicio (from Licitación vinculada)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Nombre y Apellido Prov",
+              "displayName": "Nombre y Apellido Prov",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Dirección fiscal Prov.",
+              "displayName": "Dirección fiscal Prov.",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Cargo",
+              "displayName": "Cargo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email contacto Prov",
+              "displayName": "Email contacto Prov",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email original recibido",
+              "displayName": "Email original recibido",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Aprobado",
+              "displayName": "Aprobado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Link al Word",
+              "displayName": "Link al Word",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Link al PDF",
+              "displayName": "Link al PDF",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "N° Carta Oferta",
+              "displayName": "N° Carta Oferta",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Vencimiento CO",
+              "displayName": "Vencimiento CO",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        208,
+        -384
+      ],
+      "id": "fdd4caba-f805-477f-b5f5-710cfe9e9f60",
+      "name": "Guardar links finales",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "Yo4cMiT6h0Xzus0c",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0C228VASNS",
+          "mode": "list",
+          "cachedResultName": "proyecto-final-asistente-carta-oferta"
+        },
+        "text": "=Datos incompletos - {{ $('Extraer nombre del proveedor').item.json.proveedor_extraido }} {{ JSON.parse($('Message a model').item.json.output[0].content[0].text).observaciones }} Revisa el email y volve a solicitar los datos faltantes.",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        -1808,
+        240
+      ],
+      "id": "26b9920f-70ed-4b09-863f-9547b23d01bf",
+      "name": "Aviso - Datos incompletos",
+      "webhookId": "fe3e98c0-5ee6-4a0c-8b89-b12a7274aa4a",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "jTbifjBNppxbZZni",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1xHIryjfrHfuEFyrMmeVs_o05BwrwoZqm8vgmWuMFBPM",
+          "mode": "list",
+          "cachedResultName": "Status CO 2026 - SIMULADO",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1xHIryjfrHfuEFyrMmeVs_o05BwrwoZqm8vgmWuMFBPM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 365355007,
+          "mode": "list",
+          "cachedResultName": "CO proveedores",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1xHIryjfrHfuEFyrMmeVs_o05BwrwoZqm8vgmWuMFBPM/edit#gid=365355007"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "N° SAP": "={{ $('Buscar fila de licitación').item.json.fields['N° SAP'] }}",
+            "Proveedor": "={{ $('Buscar fila de licitación').item.json.fields['Proveedor'] }}",
+            "Servicio contratado": "={{ $('Buscar fila de licitación').item.json.fields['Servicio'] }}",
+            "Comprador": "={{ $('Buscar fila de licitación').item.json.fields['Comprador'] }}",
+            "Proceso licitatorio (selec.)": "={{ $('Buscar fila de licitación').item.json.fields['Proceso licitatorio'] }}",
+            "Planta": "={{ $('Buscar fila de licitación').item.json.fields['Unidad de negocios'].join(' y ') }}",
+            "Asignado": "= {{ $now.format('MM/dd/yyyy') }}",
+            "Status CARTA OFERTA (selec.)": "Vigente - por cargar",
+            "Cond. de pago CO": "={{ $('Buscar fila de licitación').item.json.fields['Condición de pago'].replace(' dias F/F', '').replace('dias', '').trim() }}",
+            "Vencimiento CO": "={{ $('Buscar fila de licitación').item.json.fields['Plazo fin'] }}",
+            "Plazo de contrato (desde / hasta)": "={{ $('Buscar fila de licitación').item.json.fields['Plazo inicio'] + ' - ' + $('Buscar fila de licitación').item.json.fields['Plazo fin'] }}",
+            "Valor total de contrato": "={{ $('Separa fechas').item.json.valorTotalContratoTexto }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "N° SAP",
+              "displayName": "N° SAP",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Proveedor",
+              "displayName": "Proveedor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Servicio contratado",
+              "displayName": "Servicio contratado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Comprador",
+              "displayName": "Comprador",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Proceso licitatorio (selec.)",
+              "displayName": "Proceso licitatorio (selec.)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Planta",
+              "displayName": "Planta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Valor total de contrato",
+              "displayName": "Valor total de contrato",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Plazo de contrato (desde / hasta)",
+              "displayName": "Plazo de contrato (desde / hasta)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Asignado",
+              "displayName": "Asignado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status CARTA OFERTA (selec.)",
+              "displayName": "Status CARTA OFERTA (selec.)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "N° CO",
+              "displayName": "N° CO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cond. de pago CO",
+              "displayName": "Cond. de pago CO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cond. de pago SAP",
+              "displayName": "Cond. de pago SAP",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Vencimiento CO",
+              "displayName": "Vencimiento CO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status CARTA ACEPTACIÓN (selec.)",
+              "displayName": "Status CARTA ACEPTACIÓN (selec.)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cOMENTARIOS",
+              "displayName": "cOMENTARIOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        384,
+        -384
+      ],
+      "id": "a6071b74-e109-460e-8149-809613d43fe7",
+      "name": "Completar Status CO",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "plDEj73TLyyZVySd",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "mvirginiarangel290@gmail.com,mariavrangelz@gmail.com",
+        "subject": "={{ 'Carta Oferta lista para Procontract - ' + $('Buscar fila de licitación').item.json.fields['Proveedor'] }}",
+        "message": "=Hola, La carta oferta de {{ $('Buscar fila de licitación').item.json.fields.Proveedor }}  ya fue aprobada y esta lista para cargar en Procontract. Encontrarás el PDF adjunto a este correo. Servicio: {{ $('Buscar fila de licitación').item.json.fields.Servicio }}Fecha de emision: {{ $('Separa fechas').item.json.fechaEmisionTexto }} Saludos.",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -128,
+        -112
+      ],
+      "id": "324ff173-cf80-45df-af2a-587eae2f5114",
+      "name": "Enviar emial PDF CO",
+      "webhookId": "9b2d5e32-d5a2-4fea-9c70-673551cb0b13",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IBJ6PXdBzhBIUVIx",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('Email solicitud CO').item.json.id }}",
+        "message": "=Hola, \nGracias por tu respuesta. \nPara poder confeccionar la carta oferta necesitamos que completes el siguiente dato faltante: {{ JSON.parse($('Message a model').item.json.output[0].content[0].text).observaciones }} \n\nQuedamos atentos a tu respuesta. \n\nSaludos.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -1808,
+        432
+      ],
+      "id": "fd21ff7a-d0f5-4e72-96ee-be1ce3b26806",
+      "name": "Responder al proveedor - Datos incompletos",
+      "webhookId": "90740fb2-5dde-438a-b4dc-eb68e74fd645",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IBJ6PXdBzhBIUVIx",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Email solicitud CO": {
+      "main": [
+        [
+          {
+            "node": "Extraer nombre del proveedor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Datos completos?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer nombre del proveedor": {
+      "main": [
+        [
+          {
+            "node": "Buscar fila del proveedor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar fila del proveedor": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Datos completos": {
+      "main": [
+        [
+          {
+            "node": "HITL-Validación datos extraidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HITL-Validación datos extraidos": {
+      "main": [
+        [
+          {
+            "node": "Aprobado por comprador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aprobado por comprador": {
+      "main": [
+        [
+          {
+            "node": "Marcar Aprobada",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Marcar Rechazado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar Aprobada": {
+      "main": [
+        [
+          {
+            "node": "Copiar CO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Datos completos?": {
+      "main": [
+        [
+          {
+            "node": "Datos completos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Datos incompletos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copiar CO": {
+      "main": [
+        [
+          {
+            "node": "Buscar fila de licitación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar fila de licitación": {
+      "main": [
+        [
+          {
+            "node": "Transformar monto en letra",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transformar monto en letra": {
+      "main": [
+        [
+          {
+            "node": "Calcula nota combinada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcula nota combinada": {
+      "main": [
+        [
+          {
+            "node": "Separa fechas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separa fechas": {
+      "main": [
+        [
+          {
+            "node": "Update a document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a document": {
+      "main": [
+        [
+          {
+            "node": "Exportación a Word",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subir Word a Drive": {
+      "main": [
+        []
+      ]
+    },
+    "Exportación a Word": {
+      "main": [
+        [
+          {
+            "node": "Subir Word a Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exportar PDF": {
+      "main": [
+        [
+          {
+            "node": "Subir PDF a Drive",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Enviar emial PDF CO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subir PDF a Drive": {
+      "main": [
+        [
+          {
+            "node": "Guardar links finales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Datos incompletos": {
+      "main": [
+        [
+          {
+            "node": "Aviso - Datos incompletos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Responder al proveedor - Datos incompletos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar links finales": {
+      "main": [
+        [
+          {
+            "node": "Completar Status CO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Completar Status CO": {
+      "main": [
+        []
+      ]
+    },
+    "Responder al proveedor - Datos incompletos": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "581116b7-4d3d-404e-997c-813eadca34fe",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "75d9304c716e1ea006ccff4a61395c7165954521662312124698d898216979d6"
+  },
+  "nodeGroups": [],
+  "id": "g7Pe9EolJkKgCE9J",
+  "tags": []
+}

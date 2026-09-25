@@ -1,0 +1,184 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Arquitectura - Asistente Cartas Oferta" id="arq2">
+    <mxGraphModel dx="1564" dy="1827" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;fontSize=16;fontStyle=1;align=left;" value="Asistente de Cartas Oferta - Arquitectura del Sistema (nombres reales de n8n)" vertex="1">
+          <mxGeometry height="30" width="700" y="-160" as="geometry" />
+        </mxCell>
+        <mxCell id="n1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Email solicitud CO&#xa;Gmail Trigger" vertex="1">
+          <mxGeometry height="55" width="150" x="40" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="n2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Extraer nombre del proveedor&#xa;(Edit Fields)" vertex="1">
+          <mxGeometry height="55" width="150" x="210" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="n3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Buscar fila del proveedor&#xa;Airtable: search record" vertex="1">
+          <mxGeometry height="55" width="150" x="390" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="n4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Message a model&#xa;IA (OpenAI)" vertex="1">
+          <mxGeometry height="55" width="150" x="560" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="3FSaU4Qfb5b_GG6maCOe-14" edge="1" parent="1" source="if1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="n7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3FSaU4Qfb5b_GG6maCOe-15" connectable="0" parent="3FSaU4Qfb5b_GG6maCOe-14" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="True" vertex="1">
+          <mxGeometry relative="1" x="-0.2242" y="5" as="geometry">
+            <mxPoint y="1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="if1" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="Datos completos?" vertex="1">
+          <mxGeometry height="75" width="130" x="750" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="hq8ERWFdXaVcs3NIVs76-2" edge="1" parent="1" source="n5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="hq8ERWFdXaVcs3NIVs76-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="Datos incompletos&#xa;Airtable: update record" vertex="1">
+          <mxGeometry height="55" width="150" x="740" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="n6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="Aviso - Datos incompletos&#xa;Slack: post message" vertex="1">
+          <mxGeometry height="55" width="170" x="950" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="3FSaU4Qfb5b_GG6maCOe-17" edge="1" parent="1" source="n8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="if2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="HITL - Validacion datos extraidos&#xa;Slack: send and wait" vertex="1">
+          <mxGeometry height="55" width="195" x="1110" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="3FSaU4Qfb5b_GG6maCOe-9" edge="1" parent="1" source="if2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="n9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3FSaU4Qfb5b_GG6maCOe-18" connectable="0" parent="3FSaU4Qfb5b_GG6maCOe-9" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="False" vertex="1">
+          <mxGeometry relative="1" x="-0.0808" y="-2" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="3FSaU4Qfb5b_GG6maCOe-20" edge="1" parent="1" source="if2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="n10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3FSaU4Qfb5b_GG6maCOe-21" connectable="0" parent="3FSaU4Qfb5b_GG6maCOe-20" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="True" vertex="1">
+          <mxGeometry relative="1" x="-0.027" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="if2" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="Aprobado por&#xa;comprador?" vertex="1">
+          <mxGeometry height="75" width="130" x="1328" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="n9" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="Marcar Rechazado&#xa;Airtable: update record" vertex="1">
+          <mxGeometry height="55" width="150" x="1320" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="n10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Marcar Aprobada&#xa;Airtable: update record" vertex="1">
+          <mxGeometry height="55" width="150" x="1320" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="n11" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Copiar CO&#xa;Google Drive: copy file" vertex="1">
+          <mxGeometry height="55" width="150" x="170" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="n12" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Buscar fila de licitacion&#xa;Airtable: get record" vertex="1">
+          <mxGeometry height="55" width="150" x="360" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="3FSaU4Qfb5b_GG6maCOe-23" edge="1" parent="1" source="n13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="n14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Transformar monto en letra&#xa;Code" vertex="1">
+          <mxGeometry height="55" width="150" x="540" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="3FSaU4Qfb5b_GG6maCOe-26" edge="1" parent="1" source="n14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="n15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n14" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Calcula nota combinada&#xa;Code" vertex="1">
+          <mxGeometry height="55" width="150" x="720" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="3FSaU4Qfb5b_GG6maCOe-28" edge="1" parent="1" source="n15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="n16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n15" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Separa fechas&#xa;Code" vertex="1">
+          <mxGeometry height="55" width="150" x="900" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="3FSaU4Qfb5b_GG6maCOe-29" edge="1" parent="1" source="n16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="n17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Update a document&#xa;Google Docs: ~43 reemplazos" vertex="1">
+          <mxGeometry height="55" width="170" x="1090" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="3FSaU4Qfb5b_GG6maCOe-30" edge="1" parent="1" source="n17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="n18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n17" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Exportacion a Word&#xa;Google Drive: download" vertex="1">
+          <mxGeometry height="55" width="150" x="1280" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="3FSaU4Qfb5b_GG6maCOe-32" edge="1" parent="1" source="n18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="n19">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n18" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Subir Word a Drive&#xa;Google Drive: upload" vertex="1">
+          <mxGeometry height="55" width="150" x="1458" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="n19" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Exportar PDF&#xa;Google Drive: download" vertex="1">
+          <mxGeometry height="55" width="150" x="1630" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="3FSaU4Qfb5b_GG6maCOe-33" edge="1" parent="1" source="n20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="n21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n20" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Subir PDF a Drive&#xa;Google Drive: upload" vertex="1">
+          <mxGeometry height="55" width="150" x="1802" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="n21" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Guardar links finales&#xa;Airtable: update record" vertex="1">
+          <mxGeometry height="55" width="150" x="1974" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="n22" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Completar Status CO&#xa;Google Sheets: append" vertex="1">
+          <mxGeometry height="55" width="150" x="2150" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="n23" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Enviar email PDF CO&#xa;Gmail: send message&#xa;(conectado directo desde Exportar PDF)" vertex="1">
+          <mxGeometry height="65" width="180" x="1615" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="leg" parent="1" style="text;html=1;fontSize=11;align=left;" value="Referencia:&amp;nbsp;&lt;div&gt;Azul=Gmail/Drive/Sheets&lt;/div&gt;&lt;div&gt;Verde=Airtable&amp;nbsp;&lt;/div&gt;&lt;div&gt;&amp;nbsp;Morado=IA/Docs&amp;nbsp;&lt;/div&gt;&lt;div&gt;&amp;nbsp;Amarillo=HITL&amp;nbsp;&lt;/div&gt;&lt;div&gt;&amp;nbsp;Naranja=Decision&amp;nbsp;&lt;/div&gt;&lt;div&gt;&amp;nbsp;Rojo=Cierre de error&lt;/div&gt;&lt;div&gt;Gris=Code&lt;/div&gt;" vertex="1">
+          <mxGeometry height="130" width="150" x="20" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="n1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="n2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="n2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="n3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="n3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="n4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="n4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="if1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="if1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="n5" value="false">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="n5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="n6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="n10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" target="n11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="n11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="n12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" edge="1" parent="1" source="n12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="n13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e21" edge="1" parent="1" source="n19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="n20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e22" edge="1" parent="1" source="n19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="n23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e24" edge="1" parent="1" source="n21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="n22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3FSaU4Qfb5b_GG6maCOe-16" edge="1" parent="1" source="n7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="n8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Datos completos&#xa;Airtable: update record" vertex="1">
+          <mxGeometry height="55" width="150" x="935" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="hq8ERWFdXaVcs3NIVs76-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Responder al proveedor - Datos incompletos&lt;div&gt;Gmail&lt;/div&gt;" vertex="1">
+          <mxGeometry height="65" width="180" x="950" y="500" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

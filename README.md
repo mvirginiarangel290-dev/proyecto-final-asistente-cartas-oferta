@@ -18,5 +18,7 @@ Automatización de la generación de cartas oferta para proveedores MRO en Saint
 ## Enlaces
 - Base de datos completa (Airtable, solo lectura, incluye el Dashboard de Control): https://airtable.com/invite/l?inviteId=inve3eFp54lL9Lsac&inviteToken=05de4a0b768dde6cb4c9d5b72aacb0acef24e1716b1a79b208a3ccb283f9270d
 
+- Video demo (3 min): https://drive.google.com/file/d/1Kum0GDw88aOYM12gTfFONg1eKnWXUtse/view?usp=sharing 
+
 ## Autora
 Virginia Rangel 
